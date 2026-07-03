@@ -47,32 +47,30 @@ if (process.env.NODE_ENV === 'development') {
 }
 
 // MongoDB Connection
-const connectWithRetry = async () => {
+const connectDB = async () => {
   try {
-    console.log('🔍 Connecting to MongoDB...');
-    console.log('📡 Using connection string with SRV');
+    console.log('🔍 Connecting to MongoDB Atlas...');
+    console.log('📡 Using SRV connection string');
     
-    await mongoose.connect(process.env.MONGODB_URI, {
-      serverSelectionTimeoutMS: 10000,
-      socketTimeoutMS: 45000,
-    });
+    // Remove any deprecated options
+    await mongoose.connect(process.env.MONGODB_URI);
     
     console.log('✅ MongoDB Connected successfully');
     console.log('📊 Database:', mongoose.connection.name);
-    console.log('🔌 Connection State:', mongoose.connection.readyState);
+    console.log('🔌 Host:', mongoose.connection.host);
     return true;
   } catch (error) {
     console.error('❌ MongoDB Connection Error:', error.message);
     console.log('\n💡 Troubleshooting:');
-    console.log('1. Make sure 0.0.0.0/0 is added to IP whitelist');
-    console.log('2. Wait 2 minutes after adding IP');
-    console.log('3. Check your internet connection');
+    console.log('1. Check your internet connection');
+    console.log('2. Verify the cluster name in .env');
+    console.log('3. Make sure the cluster is not paused in Atlas');
     return false;
   }
 };
 
 // Connect to MongoDB
-connectWithRetry();
+await connectDB();
 
 // Routes
 app.use('/api/auth', authRoutes);
@@ -83,10 +81,17 @@ app.use('/api/dashboard', dashboardRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {
+  const dbState = mongoose.connection.readyState;
+  const states = ['disconnected', 'connected', 'connecting', 'disconnecting'];
+  
   res.status(200).json({ 
     status: 'success',
     message: 'Server is running',
-    mongodb: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
+    mongodb: {
+      state: states[dbState] || 'unknown',
+      connected: dbState === 1,
+      database: mongoose.connection.name || 'N/A'
+    },
     timestamp: new Date().toISOString()
   });
 });
@@ -115,19 +120,22 @@ const server = app.listen(PORT, () => {
   console.log(`🔗 Frontend URL: ${process.env.FRONTEND_URL}`);
 });
 
-// Handle unhandled promise rejections
+// Handle process termination
 process.on('unhandledRejection', (err) => {
   console.log('UNHANDLED REJECTION! 💥 Shutting down...');
   console.log(err.name, err.message);
-  server.close(() => {
-    process.exit(1);
-  });
+  server.close(() => process.exit(1));
 });
 
-// Handle SIGTERM
 process.on('SIGTERM', () => {
-  console.log('👋 SIGTERM RECEIVED. Shutting down gracefully');
-  server.close(() => {
-    console.log('💥 Process terminated!');
+  console.log('👋 SIGTERM received. Shutting down gracefully');
+  server.close(() => process.exit(0));
+});
+
+process.on('SIGINT', () => {
+  console.log('👋 SIGINT received. Shutting down...');
+  mongoose.connection.close(() => {
+    console.log('✅ MongoDB connection closed');
+    process.exit(0);
   });
 });

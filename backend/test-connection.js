@@ -3,22 +3,20 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-console.log('🔍 Testing MongoDB connection...');
+console.log('🔍 Testing MongoDB Atlas connection...');
+console.log('📡 Using SRV connection');
 
 const uri = process.env.MONGODB_URI;
 
-async function testConnection() {
+async function test() {
   try {
-    console.log('⏳ Connecting to MongoDB...');
-    await mongoose.connect(uri, {
-      serverSelectionTimeoutMS: 10000,
-      socketTimeoutMS: 45000,
-    });
+    console.log('⏳ Connecting...');
+    await mongoose.connect(uri);
     console.log('✅ Connected successfully!');
     console.log('📊 Database:', mongoose.connection.name);
-    console.log('🔌 Connection State:', mongoose.connection.readyState);
+    console.log('🔌 Host:', mongoose.connection.host);
     
-    // Try to list collections
+    // List collections
     const collections = await mongoose.connection.db.listCollections().toArray();
     console.log('📚 Collections:', collections.map(c => c.name));
     
@@ -26,13 +24,13 @@ async function testConnection() {
     console.log('✅ Disconnected');
     process.exit(0);
   } catch (error) {
-    console.error('❌ Connection failed:', error.message);
-    console.log('\n🔍 Troubleshooting:');
-    console.log('1. Check IP whitelist in MongoDB Atlas');
-    console.log('2. Verify connection string in .env');
-    console.log('3. Make sure cluster is not paused');
+    console.error('❌ Error:', error.message);
+    console.log('\n🔍 Check:');
+    console.log('1. Your internet connection');
+    console.log('2. Cluster name in .env');
+    console.log('3. MongoDB Atlas status');
     process.exit(1);
   }
 }
 
-testConnection();
+test();
