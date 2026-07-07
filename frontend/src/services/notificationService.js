@@ -1,8 +1,16 @@
 import api from './api';
 
 export const getNotifications = async () => {
-  const response = await api.get('/notifications');
-  return response.data;
+  try {
+    const response = await api.get('/notifications');
+    return response.data;
+  } catch (error) {
+    // Return empty data instead of throwing error
+    if (error.response?.status === 404) {
+      return { data: [], unreadCount: 0 };
+    }
+    throw error;
+  }
 };
 
 export const markAsRead = async (id) => {

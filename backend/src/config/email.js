@@ -1,4 +1,5 @@
-import nodemailer from 'nodemailer';
+import nodemailer from "nodemailer";
+
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -9,18 +10,18 @@ const isEmailEnabled = process.env.EMAIL_ENABLED !== 'false';
 let transporter = null;
 
 if (isEmailEnabled) {
-  transporter = nodemailer.createTransporter({
-    host: process.env.EMAIL_HOST || 'smtp.gmail.com',
-    port: parseInt(process.env.EMAIL_PORT) || 587,
-    secure: process.env.EMAIL_SECURE === 'true',
-    auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS,
-    },
-    tls: {
-      rejectUnauthorized: false,
-    },
-  });
+const transporter = nodemailer.createTransport({
+  host: process.env.EMAIL_HOST,
+  port: process.env.EMAIL_PORT,
+  secure: false,
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
+  },
+    // tls: {
+    //   rejectUnauthorized: false,
+    // },
+});
 } else {
   console.log('📧 Email service is disabled (development mode)');
 }

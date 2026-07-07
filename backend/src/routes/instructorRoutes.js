@@ -1,3 +1,4 @@
+// backend/src/routes/instructorRoutes.js
 import express from 'express';
 import {
   createInstructor,
@@ -23,6 +24,7 @@ router.route('/:id')
   .put(authorize('admin'), upload.single('profilePhoto'), updateInstructor)
   .delete(authorize('admin'), deleteInstructor);
 
+// ✅ Make sure this route is defined correctly
 router.get('/dashboard/:id?', getInstructorDashboard);
 
 export default router;

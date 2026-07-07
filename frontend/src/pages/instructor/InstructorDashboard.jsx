@@ -1,6 +1,15 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Calendar, Clock, BookOpen, Users, Video, MapPin, ChevronRight } from 'lucide-react';
+import { 
+  Calendar, 
+  Clock, 
+  BookOpen, 
+  Users, 
+  Video, 
+  MapPin, 
+  ChevronRight,
+  CheckCircle,
+} from 'lucide-react';
 import { getInstructorDashboard } from '../../services/instructorService';
 import { useAuth } from '../../components/context/AuthContext';
 import LoadingSkeleton from '../../components/common/LoadingSkeleton';
@@ -18,21 +27,48 @@ const InstructorDashboard = () => {
     pastLecturesList: [],
   });
 
+  // ✅ Fetch dashboard when user ID is available
   useEffect(() => {
-    fetchDashboard();
-  }, []);
+    if (user?.id) {
+      fetchDashboard();
+    } else {
+      // If no user ID, stop loading and set empty data
+      setLoading(false);
+    }
+  }, [user?.id]); // ✅ Add user.id as dependency
 
   const fetchDashboard = async () => {
+    // ✅ Double check user ID exists
+    if (!user?.id) {
+      console.warn('No user ID available, skipping dashboard fetch');
+      setLoading(false);
+      return;
+    }
+
     try {
-      const response = await getInstructorDashboard(user?.id);
-      setData(response.data);
+      setLoading(true);
+      const response = await getInstructorDashboard(user.id);
+      
+      if (response && response.data) {
+        setData({
+          totalLectures: response.data.totalLectures || 0,
+          todayLectures: response.data.todayLectures || 0,
+          upcomingLectures: response.data.upcomingLectures || 0,
+          pastLectures: response.data.pastLectures || 0,
+          todayLecturesList: response.data.todayLecturesList || [],
+          upcomingLecturesList: response.data.upcomingLecturesList || [],
+          pastLecturesList: response.data.pastLecturesList || [],
+        });
+      }
     } catch (error) {
       console.error('Error fetching dashboard:', error);
+      // Keep existing data, don't reset to zeros
     } finally {
       setLoading(false);
     }
   };
 
+  // ✅ Handle loading state properly
   if (loading) {
     return <LoadingSkeleton type="dashboard" />;
   }
@@ -77,7 +113,7 @@ const InstructorDashboard = () => {
         className="glass rounded-2xl p-6"
       >
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-          Welcome back, {user?.name}!
+          Welcome back, {user?.name || 'Instructor'}!
         </h1>
         <p className="text-gray-500 dark:text-gray-400 mt-1">
           Here's your lecture schedule overview
@@ -125,7 +161,7 @@ const InstructorDashboard = () => {
           </button>
         </div>
         <div className="space-y-4">
-          {data.todayLecturesList.length > 0 ? (
+          {data.todayLecturesList && data.todayLecturesList.length > 0 ? (
             data.todayLecturesList.map((lecture) => (
               <div
                 key={lecture._id}
@@ -200,7 +236,7 @@ const InstructorDashboard = () => {
           </button>
         </div>
         <div className="space-y-4">
-          {data.upcomingLecturesList.length > 0 ? (
+          {data.upcomingLecturesList && data.upcomingLecturesList.length > 0 ? (
             data.upcomingLecturesList.map((lecture) => (
               <div
                 key={lecture._id}
@@ -257,7 +293,7 @@ const InstructorDashboard = () => {
       </motion.div>
 
       {/* Past Lectures (Optional Section) */}
-      {data.pastLecturesList.length > 0 && (
+      {data.pastLecturesList && data.pastLecturesList.length > 0 && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}

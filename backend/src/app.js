@@ -12,6 +12,7 @@ import courseRoutes from './routes/courseRoutes.js';
 import instructorRoutes from './routes/instructorRoutes.js';
 import lectureRoutes from './routes/lectureRoutes.js';
 import dashboardRoutes from './routes/dashboardRoutes.js';
+import notificationRoutes from './routes/notificationRoutes.js'; 
 
 const app = express();
 
@@ -48,6 +49,7 @@ app.use('/api/courses', courseRoutes);
 app.use('/api/instructors', instructorRoutes);
 app.use('/api/lectures', lectureRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/notifications', notificationRoutes); 
 
 // Health check
 app.get('/api/health', (req, res) => {

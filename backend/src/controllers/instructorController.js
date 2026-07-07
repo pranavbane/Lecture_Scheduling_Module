@@ -57,7 +57,7 @@ export const getInstructors = async (req, res) => {
     const skip = (page - 1) * limit;
     const search = req.query.search || '';
     const availability = req.query.availability || '';
-    const department = req.query.department || '';
+    const department = req.query.department || ''; // ✅ ADD THIS
 
     const query = { role: 'instructor' };
     if (search) {
@@ -69,7 +69,7 @@ export const getInstructors = async (req, res) => {
     if (availability) {
       query.availability = availability;
     }
-    if (department) {
+    if (department) { // ✅ ADD THIS
       query.department = { $regex: department, $options: 'i' };
     }
 
@@ -222,57 +222,78 @@ export const deleteInstructor = async (req, res) => {
 // @access  Private
 export const getInstructorDashboard = async (req, res) => {
   try {
+    // Get instructor ID from params or use current user
     const instructorId = req.params.id || req.user.id;
     
+    console.log('Fetching dashboard for instructor ID:', instructorId);
+    
+    // Verify instructor exists
     const instructor = await User.findById(instructorId);
-    if (!instructor || instructor.role !== 'instructor') {
+    if (!instructor) {
       return res.status(404).json({
         success: false,
         message: 'Instructor not found',
       });
     }
     
+    // Check if user is an instructor
+    if (instructor.role !== 'instructor') {
+      return res.status(400).json({
+        success: false,
+        message: 'User is not an instructor',
+      });
+    }
+    
+    // Get all lectures for this instructor
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
 
-    const lectures = await Lecture.find({ 
+    // Get all lectures (not cancelled)
+    const allLectures = await Lecture.find({ 
       instructor: instructorId,
       status: { $ne: 'cancelled' }
     }).populate('course', 'name');
 
-    const todayLectures = lectures.filter(lecture => {
+    // Filter lectures by date
+    const todayLectures = allLectures.filter(lecture => {
       const lectureDate = new Date(lecture.lectureDate);
       return lectureDate >= today && lectureDate < tomorrow;
     });
 
-    const upcomingLectures = lectures.filter(lecture => {
+    const upcomingLectures = allLectures.filter(lecture => {
       const lectureDate = new Date(lecture.lectureDate);
       return lectureDate >= tomorrow && lecture.status === 'upcoming';
     });
 
-    const pastLectures = lectures.filter(lecture => {
+    const pastLectures = allLectures.filter(lecture => {
       const lectureDate = new Date(lecture.lectureDate);
       return lectureDate < today || lecture.status === 'completed';
     });
 
+    const responseData = {
+      totalLectures: allLectures.length,
+      todayLectures: todayLectures.length,
+      upcomingLectures: upcomingLectures.length,
+      pastLectures: pastLectures.length,
+      todayLecturesList: todayLectures.slice(0, 10),
+      upcomingLecturesList: upcomingLectures.slice(0, 10),
+      pastLecturesList: pastLectures.slice(0, 10),
+    };
+
+    console.log('Dashboard data:', responseData);
+
     res.status(200).json({
       success: true,
-      data: {
-        totalLectures: lectures.length,
-        todayLectures: todayLectures.length,
-        upcomingLectures: upcomingLectures.length,
-        pastLectures: pastLectures.length,
-        todayLecturesList: todayLectures,
-        upcomingLecturesList: upcomingLectures.slice(0, 5),
-        pastLecturesList: pastLectures.slice(0, 5),
-      },
+      data: responseData,
     });
   } catch (error) {
-    res.status(400).json({
+    console.error('Error in getInstructorDashboard:', error);
+    res.status(500).json({
       success: false,
-      message: error.message,
+      message: 'Server error',
+      error: error.message,
     });
   }
 };

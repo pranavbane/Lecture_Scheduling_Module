@@ -12,7 +12,8 @@ import {
   LogOut,
   ChevronDown,
 } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../../components/context/AuthContext';
+import useDebounce from '../../components/hooks/useDebounce';
 import { getNotifications } from '../../services/notificationService';
 
 const Navbar = ({ toggleSidebar, isMobile }) => {
@@ -37,9 +38,14 @@ const Navbar = ({ toggleSidebar, isMobile }) => {
   const fetchNotifications = async () => {
     try {
       const response = await getNotifications();
-      setNotifications(response.data);
+      setNotifications(response.data || []);
     } catch (error) {
-      console.error('Error fetching notifications:', error);
+      if (error.response?.status === 404) {
+        setNotifications([]);
+      } else {
+        console.error('Error fetching notifications:', error);
+        setNotifications([]);
+      }
     }
   };
 
@@ -68,15 +74,15 @@ const Navbar = ({ toggleSidebar, isMobile }) => {
               <Menu className="w-5 h-5 text-gray-600 dark:text-gray-300" />
             </button>
           )}
-          
+
           {/* Search Bar */}
           <div className="relative hidden md:block">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <input
+            {/* <input
               type="text"
               placeholder="Search courses, instructors, lectures..."
               className="pl-10 pr-4 py-2 w-80 bg-gray-100 dark:bg-gray-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-            />
+            /> */}
           </div>
         </div>
 
@@ -123,9 +129,8 @@ const Navbar = ({ toggleSidebar, isMobile }) => {
                     notifications.map((notification) => (
                       <div
                         key={notification._id}
-                        className={`p-4 border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer ${
-                          !notification.read ? 'bg-primary-50 dark:bg-primary-900/20' : ''
-                        }`}
+                        className={`p-4 border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer ${!notification.read ? 'bg-primary-50 dark:bg-primary-900/20' : ''
+                          }`}
                       >
                         <p className="text-sm text-gray-900 dark:text-white">
                           {notification.message}

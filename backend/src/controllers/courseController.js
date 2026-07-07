@@ -50,13 +50,18 @@ export const getCourses = async (req, res) => {
     const skip = (page - 1) * limit;
     const search = req.query.search || '';
     const status = req.query.status || '';
+    const level = req.query.level || ''; // ✅ ADD THIS
 
+    // Build query
     const query = {};
     if (search) {
       query.name = { $regex: search, $options: 'i' };
     }
     if (status) {
       query.status = status;
+    }
+    if (level) { // ✅ ADD THIS
+      query.level = level;
     }
 
     const courses = await Course.find(query)
@@ -67,6 +72,7 @@ export const getCourses = async (req, res) => {
 
     const total = await Course.countDocuments(query);
 
+    // Get lecture count for each course
     const coursesWithCount = await Promise.all(courses.map(async (course) => {
       const lectureCount = await Lecture.countDocuments({ course: course._id });
       return {

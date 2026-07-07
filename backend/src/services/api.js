@@ -1,4 +1,5 @@
 import axios from 'axios';
+import toast from 'react-hot-toast';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
@@ -17,7 +18,6 @@ api.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
-    // Add these headers for CORS
     config.headers['Accept'] = 'application/json';
     return config;
   },
@@ -28,7 +28,15 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
+    // Handle 429 Too Many Requests
+    if (error.response?.status === 429) {
+      console.warn('Rate limit exceeded, waiting before retry...');
+      // Don't show toast for 429 errors, they're handled gracefully
+      return Promise.reject(error);
+    }
+    
     console.error('API Error:', error.response?.data || error.message);
+    
     if (error.response?.status === 401) {
       localStorage.removeItem('token');
       localStorage.removeItem('user');

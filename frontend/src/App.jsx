@@ -11,10 +11,13 @@ import ForgotPassword from './pages/auth/ForgotPassword';
 import ResetPassword from './pages/auth/ResetPassword';
 
 // Admin Pages
+import AdminProfile from './pages/admin/AdminProfile';
+
 import AdminDashboard from './pages/admin/AdminDashboard';
 import CourseManagement from './pages/admin/CourseManagement';
 import InstructorManagement from './pages/admin/InstructorManagement';
 import LectureManagement from './pages/admin/LectureManagement';
+import InstructorLectures from './pages/instructor/InstructorLectures';
 
 // Instructor Pages
 import InstructorDashboard from './pages/instructor/InstructorDashboard';
@@ -57,16 +60,19 @@ function App() {
           <Route path="/register" element={<Register />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password/:token" element={<ResetPassword />} />
+          {/* <Route path="/profile" element={<Profile />} /> */}
 
           {/* Protected Routes */}
           <Route element={<ProtectedRoute />}>
             <Route element={<Layout />}>
               {/* Admin Routes */}
               <Route path="/" element={<Navigate to="/admin/dashboard" />} />
+              <Route path="/admin/profile" element={<AdminProfile />} />
               <Route path="/admin/dashboard" element={<AdminDashboard />} />
               <Route path="/admin/courses" element={<CourseManagement />} />
               <Route path="/admin/instructors" element={<InstructorManagement />} />
               <Route path="/admin/lectures" element={<LectureManagement />} />
+              <Route path="/instructor/lectures" element={<InstructorLectures />} />
 
               {/* Instructor Routes */}
               <Route path="/instructor/dashboard" element={<InstructorDashboard />} />
