@@ -130,6 +130,27 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+app.get('/api/db-status', async (req, res) => {
+  try {
+    const state = mongoose.connection.readyState;
+    const states = ['disconnected', 'connected', 'connecting', 'disconnecting'];
+    
+    res.status(200).json({
+      success: true,
+      database: {
+        state: states[state] || 'unknown',
+        connected: state === 1,
+        name: mongoose.connection.name || 'N/A',
+        host: mongoose.connection.host || 'N/A',
+      }
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
 // ============ 404 HANDLER ============
 app.use('*', (req, res) => {
   console.log(`❌ Route not found: ${req.method} ${req.originalUrl}`);
