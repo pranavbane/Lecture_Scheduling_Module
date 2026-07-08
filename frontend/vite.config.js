@@ -15,10 +15,29 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     sourcemap: false,
+    // ✅ FIX: manualChunks should be a function
     rollupOptions: {
       output: {
-        manualChunks: {
-          vendor: ['react', 'react-dom', 'react-router-dom'],
+        manualChunks: (id) => {
+          // Separate vendor chunks
+          if (id.includes('node_modules')) {
+            if (id.includes('react') || id.includes('react-dom') || id.includes('react-router-dom')) {
+              return 'vendor-react';
+            }
+            if (id.includes('lucide-react')) {
+              return 'vendor-icons';
+            }
+            if (id.includes('framer-motion')) {
+              return 'vendor-animation';
+            }
+            if (id.includes('chart.js') || id.includes('react-chartjs-2')) {
+              return 'vendor-charts';
+            }
+            if (id.includes('@fullcalendar')) {
+              return 'vendor-calendar';
+            }
+            return 'vendor-other';
+          }
         },
       },
     },
