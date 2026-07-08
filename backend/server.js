@@ -13,7 +13,8 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // ============ CORS CONFIGURATION ============
-const allowedOrigins = ['http://localhost:5173', 'http://localhost:3000'];
+const allowedOrigins = ['http://localhost:5173', 'http://localhost:3000','https://frontend-c6qnvcj1q-pranavbanes-projects.vercel.app','https://frontend-c9d7m6jte-pranavbanes-projects.vercel.app',
+  'https://*.vercel.app'];
 
 app.use(cors({
   origin: function (origin, callback) {
@@ -21,7 +22,11 @@ app.use(cors({
     if (allowedOrigins.indexOf(origin) !== -1) {
       callback(null, true);
     } else {
-      callback(new Error('Not allowed by CORS'));
+      if (origin.endsWith('.vercel.app')) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
     }
   },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
