@@ -148,15 +148,39 @@ export const updateInstructor = async (req, res) => {
       });
     }
 
+    // ✅ Check if user is updating their own profile or is admin
+    const isSelf = req.user.id === req.params.id;
+    const isAdmin = req.user.role === 'admin';
+
+    if (!isSelf && !isAdmin) {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to update this profile',
+      });
+    }
+
+    // ✅ If not admin, prevent role and status changes
+    if (!isAdmin) {
+      delete req.body.role;
+      delete req.body.isActive;
+    }
+
+    // Upload new profile photo if provided
     if (req.file) {
+      // Delete old photo from cloudinary if exists
       if (instructor.profilePhoto) {
-        const publicId = instructor.profilePhoto.split('/').pop().split('.')[0];
-        await cloudinary.uploader.destroy(publicId);
+        try {
+          const publicId = instructor.profilePhoto.split('/').pop().split('.')[0];
+          await cloudinary.uploader.destroy(publicId);
+        } catch (error) {
+          console.error('Error deleting old photo:', error);
+        }
       }
       const result = await cloudinary.uploader.upload(req.file.path);
       req.body.profilePhoto = result.secure_url;
     }
 
+    // Remove password from update
     delete req.body.password;
 
     instructor = await User.findByIdAndUpdate(req.params.id, req.body, {
@@ -169,6 +193,7 @@ export const updateInstructor = async (req, res) => {
       data: instructor,
     });
   } catch (error) {
+    console.error('Update instructor error:', error);
     res.status(400).json({
       success: false,
       message: error.message,
@@ -190,6 +215,15 @@ export const deleteInstructor = async (req, res) => {
       });
     }
 
+    // ✅ Prevent deleting yourself
+    if (req.user.id === req.params.id) {
+      return res.status(400).json({
+        success: false,
+        message: 'You cannot delete your own account',
+      });
+    }
+
+    // Check if instructor has lectures
     const lectureCount = await Lecture.countDocuments({ instructor: instructor._id });
     if (lectureCount > 0) {
       return res.status(400).json({
@@ -198,9 +232,14 @@ export const deleteInstructor = async (req, res) => {
       });
     }
 
+    // Delete profile photo from cloudinary if exists
     if (instructor.profilePhoto) {
-      const publicId = instructor.profilePhoto.split('/').pop().split('.')[0];
-      await cloudinary.uploader.destroy(publicId);
+      try {
+        const publicId = instructor.profilePhoto.split('/').pop().split('.')[0];
+        await cloudinary.uploader.destroy(publicId);
+      } catch (error) {
+        console.error('Error deleting profile photo:', error);
+      }
     }
 
     await instructor.deleteOne();
@@ -210,6 +249,7 @@ export const deleteInstructor = async (req, res) => {
       message: 'Instructor deleted successfully',
     });
   } catch (error) {
+    console.error('Delete instructor error:', error);
     res.status(400).json({
       success: false,
       message: error.message,

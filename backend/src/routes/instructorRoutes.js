@@ -1,4 +1,3 @@
-// backend/src/routes/instructorRoutes.js
 import express from 'express';
 import {
   createInstructor,
@@ -13,18 +12,21 @@ import upload from '../middlewares/upload.js';
 
 const router = express.Router();
 
+// All routes require authentication
 router.use(protect);
 
+// Admin only routes
 router.route('/')
-  .get(authorize('admin'), getInstructors)
-  .post(authorize('admin'), upload.single('profilePhoto'), createInstructor);
+  .get(authorize('admin'), getInstructors) // Get all instructors - admin only
+  .post(authorize('admin'), upload.single('profilePhoto'), createInstructor); // Create instructor - admin only
 
+// ✅ FIX: Allow instructors to update their own profile
 router.route('/:id')
-  .get(authorize('admin'), getInstructor)
-  .put(authorize('admin'), upload.single('profilePhoto'), updateInstructor)
-  .delete(authorize('admin'), deleteInstructor);
+  .get(authorize('admin'), getInstructor) // Get single instructor - admin only
+  .put(upload.single('profilePhoto'), updateInstructor) // ✅ Remove admin restriction
+  .delete(authorize('admin'), deleteInstructor); // Delete instructor - admin only
 
-// ✅ Make sure this route is defined correctly
+// Instructor dashboard - accessible by instructor or admin
 router.get('/dashboard/:id?', getInstructorDashboard);
 
 export default router;

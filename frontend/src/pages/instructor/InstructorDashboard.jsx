@@ -29,7 +29,7 @@ const InstructorDashboard = () => {
 
   // ✅ Fetch dashboard when user ID is available
   useEffect(() => {
-    if (user?.id) {
+    if (user?._id) {
       fetchDashboard();
     } else {
       // If no user ID, stop loading and set empty data
@@ -39,7 +39,7 @@ const InstructorDashboard = () => {
 
   const fetchDashboard = async () => {
     // ✅ Double check user ID exists
-    if (!user?.id) {
+    if (!user?._id) {
       console.warn('No user ID available, skipping dashboard fetch');
       setLoading(false);
       return;
@@ -47,7 +47,7 @@ const InstructorDashboard = () => {
 
     try {
       setLoading(true);
-      const response = await getInstructorDashboard(user.id);
+      const response = await getInstructorDashboard(user._id);
       
       if (response && response.data) {
         setData({

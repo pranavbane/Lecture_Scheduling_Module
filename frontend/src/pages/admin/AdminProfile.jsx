@@ -31,11 +31,10 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../components/context/AuthContext';
 import { updateInstructor, getInstructorDashboard } from '../../services/instructorService';
+import { updateUser } from '../../services/userService';
+import { changePassword } from '../../services/authService';
 import toast from 'react-hot-toast';
 import LoadingSkeleton from '../../components/common/LoadingSkeleton';
-
-// Import changePassword from authService
-import { changePassword } from '../../services/authService';
 
 const profileSchema = z.object({
   name: z.string().min(2, 'Name is required'),
@@ -112,7 +111,7 @@ const Profile = () => {
   }, [user, setValue]);
 
   useEffect(() => {
-    if (user?.role === 'instructor') {
+    if (user?.role === 'instructor' && user?._id) {
       fetchStats();
     }
   }, [user]);
@@ -120,7 +119,7 @@ const Profile = () => {
   const fetchStats = async () => {
     setDashboardLoading(true);
     try {
-      const response = await getInstructorDashboard(user.id);
+      const response = await getInstructorDashboard(user._id);
       setStats({
         totalLectures: response.data.totalLectures || 0,
         todayLectures: response.data.todayLectures || 0,
@@ -151,6 +150,11 @@ const Profile = () => {
   };
 
   const onSubmit = async (data) => {
+    if (!user?._id) {
+      toast.error('User not authenticated');
+      return;
+    }
+
     setLoading(true);
     try {
       const formData = new FormData();
@@ -161,15 +165,24 @@ const Profile = () => {
         formData.append('profilePhoto', selectedFile);
       }
 
-      await updateInstructor(user.id, formData);
+      // ✅ Use the appropriate service based on user role
+      if (user.role === 'instructor') {
+        await updateInstructor(user._id, formData);
+      } else {
+        // Admin or other roles
+        await updateUser(user._id, formData);
+      }
+      
       await loadUser();
       toast.success('Profile updated successfully');
       setIsEditing(false);
       setSelectedFile(null);
+      
       if (user?.role === 'instructor') {
         fetchStats();
       }
     } catch (error) {
+      console.error('Update error:', error);
       toast.error(error.response?.data?.message || 'Failed to update profile');
     } finally {
       setLoading(false);

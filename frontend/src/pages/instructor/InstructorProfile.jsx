@@ -83,21 +83,21 @@ const InstructorProfile = () => {
 
   // Fetch stats only when user ID is available
   useEffect(() => {
-    if (user?.id) {
+    if (user?. _id) {
       fetchStats();
     }
   }, [user]);
 
   const fetchStats = async () => {
     // Check if user ID exists
-    if (!user?.id) {
+    if (!user?. _id) {
       console.warn('User ID not available, skipping stats fetch');
       return;
     }
 
     setDashboardLoading(true);
     try {
-      const response = await getInstructorDashboard(user.id);
+      const response = await getInstructorDashboard(user._id);
       if (response && response.data) {
         setStats({
           totalLectures: response.data.totalLectures || 0,
@@ -131,8 +131,8 @@ const InstructorProfile = () => {
   };
 
   const onSubmit = async (data) => {
-    if (!user?.id) {
-      toast.error('Work in progress');
+    if (!user?._id) {
+      toast.error('Failed to update profile: User ID not available');
       return;
     }
 
@@ -146,13 +146,13 @@ const InstructorProfile = () => {
         formData.append('profilePhoto', selectedFile);
       }
 
-      await updateInstructor(user.id, formData);
+      await updateInstructor(user._id, formData);
       await loadUser();
       toast.success('Profile updated successfully');
       setIsEditing(false);
       setSelectedFile(null);
       // Refresh stats after update
-      if (user.id) {
+      if (user._id) {
         fetchStats();
       }
     } catch (error) {

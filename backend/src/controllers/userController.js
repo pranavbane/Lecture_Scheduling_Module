@@ -78,6 +78,9 @@ export const getUserById = async (req, res) => {
 // @desc    Update user
 // @route   PUT /api/users/:id
 // @access  Private
+// @desc    Update user
+// @route   PUT /api/users/:id
+// @access  Private
 export const updateUser = async (req, res) => {
   try {
     let user = await User.findById(req.params.id);
@@ -90,7 +93,10 @@ export const updateUser = async (req, res) => {
     }
 
     // Check if user is updating their own profile or is admin
-    if (req.user.id !== req.params.id && req.user.role !== 'admin') {
+    const isSelf = req.user.id === req.params.id;
+    const isAdmin = req.user.role === 'admin';
+
+    if (!isSelf && !isAdmin) {
       return res.status(403).json({
         success: false,
         message: 'Not authorized to update this user',
@@ -100,8 +106,12 @@ export const updateUser = async (req, res) => {
     // Upload new profile photo if provided
     if (req.file) {
       if (user.profilePhoto) {
-        const publicId = user.profilePhoto.split('/').pop().split('.')[0];
-        await cloudinary.uploader.destroy(publicId);
+        try {
+          const publicId = user.profilePhoto.split('/').pop().split('.')[0];
+          await cloudinary.uploader.destroy(publicId);
+        } catch (error) {
+          console.error('Error deleting old profile photo:', error);
+        }
       }
       const result = await cloudinary.uploader.upload(req.file.path);
       req.body.profilePhoto = result.secure_url;
@@ -109,8 +119,12 @@ export const updateUser = async (req, res) => {
 
     // Remove sensitive fields from update
     delete req.body.password;
-    delete req.body.role; // Only admin can change role
-    delete req.body.isActive; // Only admin can change status
+    
+    // Only admin can change role and status
+    if (!isAdmin) {
+      delete req.body.role;
+      delete req.body.isActive;
+    }
 
     user = await User.findByIdAndUpdate(req.params.id, req.body, {
       new: true,
@@ -122,6 +136,7 @@ export const updateUser = async (req, res) => {
       data: user,
     });
   } catch (error) {
+    console.error('Update user error:', error);
     res.status(400).json({
       success: false,
       message: error.message,
@@ -222,8 +237,12 @@ export const deleteUser = async (req, res) => {
 
     // Delete profile photo from cloudinary if exists
     if (user.profilePhoto) {
-      const publicId = user.profilePhoto.split('/').pop().split('.')[0];
-      await cloudinary.uploader.destroy(publicId);
+      try {
+        const publicId = user.profilePhoto.split('/').pop().split('.')[0];
+        await cloudinary.uploader.destroy(publicId);
+      } catch (error) {
+        console.error('Error deleting profile photo:', error);
+      }
     }
 
     await user.deleteOne();
